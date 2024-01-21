@@ -2,13 +2,22 @@
 
 # Needed to cx_Freeze as a GUI app. https://stackoverflow.com/a/3237924
 import sys
+
+
 class dummyStream:
     ''' dummyStream behaves like a stream but does nothing. '''
+
     def __init__(self): pass
-    def write(self,data): pass
-    def read(self,data): pass
+
+    def write(self, data): pass
+
+    def read(self, data): pass
+
     def flush(self): pass
+
     def close(self): pass
+
+
 # Redirect all default streams to this dummyStream:
 sys.stdout = dummyStream()
 sys.stderr = dummyStream()
@@ -16,7 +25,6 @@ sys.stdin = dummyStream()
 sys.__stdout__ = dummyStream()
 sys.__stderr__ = dummyStream()
 sys.__stdin__ = dummyStream()
-
 
 import audioop
 import flet as ft
@@ -54,8 +62,8 @@ def main(page: ft.Page):
     transcription_file = "transcription.txt"
     max_energy = 5000
     sample_rate = 16000
-    chunk_size = 1024
-    max_int16 = 2**15
+    chunk_size = 512
+    max_int16 = 2 ** 15
 
     # Set window settings.
     page.title = "Transcriber"
@@ -69,8 +77,8 @@ def main(page: ft.Page):
     #
 
     def always_on_top_callback(_):
-       page.window_always_on_top = always_on_top_checkbox.value
-       page.update()
+        page.window_always_on_top = always_on_top_checkbox.value
+        page.update()
 
     def text_background_callback(_):
         if text_background_checkbox.value:
@@ -100,12 +108,23 @@ def main(page: ft.Page):
             list_item.size = int(text_size_dropdown.value)
         transcription_list.update()
 
-    audio_model:whisper.Whisper = None
-    loaded_audio_model:str = None
+    def clear_transcription_callback(_):
+        nonlocal last_sample  # Add this line to refer to the global variable
+        transcription_list.controls = []
+        last_sample = bytes()  # Reset last_sample when clearing transcription
+        transcription_list.update()
+
+    def create_transcription_text_widget():
+        combined_text = '\n'.join([item.value for item in transcription_list.controls])
+        return combined_text
+
+    audio_model: whisper.Whisper = None
+    loaded_audio_model: str = None
     currently_transcribing = False
-    stop_recording:function = None
-    record_thread:Thread = None
+    stop_recording: function = None
+    record_thread: Thread = None
     data_queue = Queue()
+
     def transcribe_callback(_):
         nonlocal currently_transcribing, audio_model, stop_recording, loaded_audio_model, record_thread, run_record_thread
         if not currently_transcribing:
@@ -120,7 +139,8 @@ def main(page: ft.Page):
                 model = model + ".en"
 
             # Only re-load the audio model if it changed.
-            if (not audio_model or not loaded_audio_model) or ((audio_model and loaded_audio_model) and loaded_audio_model != model):
+            if (not audio_model or not loaded_audio_model) or (
+                    (audio_model and loaded_audio_model) and loaded_audio_model != model):
                 device = 'cpu'
                 if torch.has_cuda:
                     device = "cuda"
@@ -233,7 +253,6 @@ def main(page: ft.Page):
         page.splash = None
         page.update()
 
-
     #
     # Build controls.
     #
@@ -294,13 +313,18 @@ def main(page: ft.Page):
         text_size=14,
     )
 
-    translate_checkbox = ft.Checkbox(label="Translate To English", value=settings.get('translate', False), disabled=language_dropdown.value == 'en')
-    dark_mode_checkbox = ft.Checkbox(label="Dark Mode", value=settings.get('dark_mode', False), on_change=dark_mode_callback)
-    text_background_checkbox = ft.Checkbox(label="Text Background", value=settings.get('text_background', False), on_change=text_background_callback)
-    always_on_top_checkbox = ft.Checkbox(label="Always On Top", value=settings.get('always_on_top', False), on_change=always_on_top_callback)
+    translate_checkbox = ft.Checkbox(label="Translate To English", value=settings.get('translate', False),
+                                     disabled=language_dropdown.value == 'en')
+    dark_mode_checkbox = ft.Checkbox(label="Dark Mode", value=settings.get('dark_mode', False),
+                                     on_change=dark_mode_callback)
+    text_background_checkbox = ft.Checkbox(label="Text Background", value=settings.get('text_background', False),
+                                           on_change=text_background_callback)
+    always_on_top_checkbox = ft.Checkbox(label="Always On Top", value=settings.get('always_on_top', False),
+                                         on_change=always_on_top_callback)
     transparent_checkbox = ft.Checkbox(label="Transparent", value=settings.get('transparent', False))
 
-    energy_slider = ft.Slider(min=0, max=max_energy, value=settings.get('volume_threshold', 300), expand=True, height=20)
+    energy_slider = ft.Slider(min=0, max=max_energy, value=settings.get('volume_threshold', 300), expand=True,
+                              height=20)
     volume_bar = ft.ProgressBar(value=0.01, color=ft.colors.RED_800)
 
     transcription_list = ft.ListView([], spacing=10, padding=20, expand=True, auto_scroll=True)
@@ -329,7 +353,8 @@ def main(page: ft.Page):
                 content=ft.Row(
                     [
                         model_dropdown,
-                        ft.Icon("help_outline", tooltip="Choose which model to transcribe speech with.\nModels are downloaded automatically the first time they are used.")
+                        ft.Icon("help_outline",
+                                tooltip="Choose which model to transcribe speech with.\nModels are downloaded automatically the first time they are used.")
                     ],
                     spacing=10,
                 ),
@@ -367,7 +392,8 @@ def main(page: ft.Page):
                                 ft.Row(
                                     [
                                         transparent_checkbox,
-                                        ft.Icon("help_outline", tooltip="Make the window transparent while transcribing.")
+                                        ft.Icon("help_outline",
+                                                tooltip="Make the window transparent while transcribing.")
                                     ]
                                 ),
                                 always_on_top_checkbox,
@@ -382,7 +408,8 @@ def main(page: ft.Page):
                 content=ft.Row(
                     [
                         energy_slider,
-                        ft.Icon("help_outline", tooltip="Required volume to start decoding speech.\nAdjusts max volume automatically.")
+                        ft.Icon("help_outline",
+                                tooltip="Required volume to start decoding speech.\nAdjusts max volume automatically.")
                     ],
                     expand=True,
                 ),
@@ -405,12 +432,23 @@ def main(page: ft.Page):
         visible=False
     )
 
+    clear_transcription_button = ft.ElevatedButton(
+        text="Clear Transcription",
+        on_click=clear_transcription_callback,
+        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=5)),
+        bgcolor=ft.colors.RED_800, color=ft.colors.WHITE
+    )
+
     page.add(
         settings_controls,
         draggable_area1,
         ft.Container(
             content=transcribe_button,
             padding=ft.padding.only(left=10, right=45, top=5)
+        ),
+        ft.Container(
+            content=clear_transcription_button,
+            padding=ft.padding.only(left=10, right=45, top=3)
         ),
         ft.Container(
             content=volume_bar,
@@ -434,7 +472,8 @@ def main(page: ft.Page):
     #
 
     run_record_thread = True
-    def recording_thread(stream:pyaudio.Stream):
+
+    def recording_thread(stream: pyaudio.Stream):
         nonlocal max_energy
         while run_record_thread:
             # We record as fast as possible so that we can update the volume bar at a fast rate.
@@ -489,7 +528,7 @@ def main(page: ft.Page):
 
                 # Write out raw frames as a wave file.
                 wav_file = io.BytesIO()
-                wav_writer:wave.Wave_write = wave.open(wav_file, "wb")
+                wav_writer: wave.Wave_write = wave.open(wav_file, "wb")
                 wav_writer.setframerate(sample_rate)
                 wav_writer.setsampwidth(pa.get_sample_size(pyaudio.paInt16))
                 wav_writer.setnchannels(1)
@@ -498,7 +537,7 @@ def main(page: ft.Page):
 
                 # Read the audio data, now with wave headers.
                 wav_file.seek(0)
-                wav_reader:wave.Wave_read = wave.open(wav_file)
+                wav_reader: wave.Wave_read = wave.open(wav_file)
                 samples = wav_reader.getnframes()
                 audio = wav_reader.readframes(samples)
                 wav_reader.close()
@@ -526,18 +565,21 @@ def main(page: ft.Page):
 
                 if not phrase_complete and transcription_list.controls:
                     transcription_list.controls[-1].value = text
-                elif not transcription_list.controls or (transcription_list.controls and transcription_list.controls[-1].value):
+                elif not transcription_list.controls or (
+                        transcription_list.controls and transcription_list.controls[-1].value):
                     # Always add a new item if there are no items in the list.
                     # Only add another item to the list if the previous item is not an empty string.
                     # Since hearing silence triggers phrase_complete, there's a good chance that most appends are going to empty text.
-                    transcription_list.controls.append(ft.Text(text, selectable=True, size=int(text_size_dropdown.value), bgcolor=color))
+                    transcription_list.controls.append(
+                        ft.Text(text, selectable=True, size=int(text_size_dropdown.value), bgcolor=color))
                 transcription_list.update()
 
                 # If we've reached our max recording time, it's time to break up the buffer, add an empty line after we edited the last line.
                 audio_length_in_seconds = samples / float(sample_rate)
                 if audio_length_in_seconds > max_record_time:
                     last_sample = bytes()
-                    transcription_list.controls.append(ft.Text('', selectable=True, size=int(text_size_dropdown.value), bgcolor=color))
+                    transcription_list.controls.append(
+                        ft.Text('', selectable=True, size=int(text_size_dropdown.value), bgcolor=color))
 
         sleep(0.1)
 
