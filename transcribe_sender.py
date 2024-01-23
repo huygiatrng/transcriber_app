@@ -2,7 +2,7 @@
 
 # Needed to cx_Freeze as a GUI app. https://stackoverflow.com/a/3237924
 import sys
-
+import socket
 
 class dummyStream:
     ''' dummyStream behaves like a stream but does nothing. '''
@@ -43,7 +43,7 @@ from threading import Thread
 from time import sleep
 from whisper.tokenizer import LANGUAGES
 import pyperclip
-
+import time
 
 def main(page: ft.Page):
     #
@@ -72,6 +72,22 @@ def main(page: ft.Page):
     page.window_width = settings.get('window_width', page.window_min_width)
     page.window_min_height = 475.0
     page.window_height = settings.get('window_height', 800.0)
+
+    #
+    # Connection server
+    #
+    def create_connection(host, port):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((host, port))
+        return s
+
+    def send_data(socket, data):
+        socket.sendall(data.encode())
+
+    HOST = '10.0.0.20'  # Replace with the server's IP address
+    PORT = 12345  # The same port as used by the server
+    prev_data = ''
+    client_socket = create_connection(HOST, PORT)
 
     #
     # Callbacks.
@@ -643,6 +659,9 @@ def main(page: ft.Page):
                     index_in_list += 1
                     transcription_list.controls.append(custom_item)
 
+                if transcription_text_from_list.value != prev_data:
+                    prev_data = transcription_text_from_list.value
+                    send_data(client_socket, prev_data)
         sleep(0.1)
 
 
