@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Socket Data Display</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            background-color: #1e1e1e; /* Dark background */
+            color: #c7c7c7; /* Light text color */
+        }
+        #data-container {
+            height: 50vh;
+            overflow-y: auto;
+            border: 1px solid #333; /* Darker border color */
+            padding: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); /* Darker shadow */
+            margin-bottom: 10px;
+            background-color: #2a2a2a; /* Dark background for container */
+        }
+        #raw-data {
+            border: 1px solid #333; /* Darker border color */
+            padding: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); /* Darker shadow */
+            margin-bottom: 10px;
+            white-space: pre-wrap;
+            background-color: #2a2a2a; /* Dark background for raw data */
+        }
+        .copy-btn {
+            cursor: pointer;
+            float: right;
+            margin-left: 10px;
+            background-color: #0056b3; /* Darker button color */
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.8em;
+        }
+        p {
+            position: relative;
+            border-bottom: 1px solid #444; /* Darker line color */
+            padding: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="data-container"></div>
+    <pre id="raw-data"></pre>
+
+    <script>
+        function fetchData() {
+            fetch('/data')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('data-container');
+                    const rawData = document.getElementById('raw-data');
+
+                    // Update raw data
+                    rawData.textContent = data.data;
+
+                    // Split data into paragraphs
+                    container.innerHTML = '';
+                    const paragraphs = data.data.split('\n');
+                    paragraphs.forEach(p => {
+                        const para = document.createElement('p');
+                        para.textContent = p;
+                        container.appendChild(para);
+
+                        const copyBtn = document.createElement('button');
+                        copyBtn.textContent = 'Copy';
+                        copyBtn.className = 'copy-btn';
+                        copyBtn.onclick = () => navigator.clipboard.writeText(p);
+                        para.appendChild(copyBtn);
+                    });
+                });
+        }
+
+        setInterval(fetchData, 500);
+    </script>
+</body>
+</html>
