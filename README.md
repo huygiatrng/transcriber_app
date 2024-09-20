@@ -1,4 +1,4 @@
-# Transcriber
+# Live Transcriber
 
 A real-time speech to text transcription app built with Flet and OpenAI Whisper.
 
